@@ -8,11 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .iframe-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            position: relative; /* Changed from fixed to relative */
+            width: 100%;
+            height: calc(100vh - 40px); /* Subtract navbar height */
+            margin-top: 40px; /* Match navbar height */
             overflow: hidden;
             z-index: 1;
         }
@@ -42,16 +41,18 @@
         .nav-blur {
             backdrop-filter: blur(10px);
             background-color: rgba(255, 255, 255, 0.8);
-            transform: translateY(-100%);
             transition: transform 0.3s ease-in-out;
+            transform: translateY(0);
+            height: 40px; /* Explicit navbar height */
+            z-index: 20;
         }
         
         .nav-blur.show {
             transform: translateY(0);
         }
         
-        .nav-blur:hover {
-            transform: translateY(0);
+        .nav-blur.hidden-nav {
+            transform: translateY(-100%);
         }
         
         #mobile-menu-button {
@@ -67,18 +68,18 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <!-- Navigation Bar -->
-    <nav class="nav-blur fixed w-full z-20 shadow-md">
+    <nav class="nav-blur fixed w-full shadow-md show">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-10">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <img src="https://en.minghui.org/s/images/home/external/mh-logo-falun/mh-logo-falun.png" alt="Minghui Logo" class="h-8 w-auto">
                     </div>
-                                         <div class="hidden md:block">
-                         <div class="ml-10 flex items-baseline space-x-4" id="desktop-menu">
-                             <!-- Desktop menu items will be generated dynamically -->
-                         </div>
-                     </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4" id="desktop-menu">
+                            <!-- Desktop menu items will be generated dynamically -->
+                        </div>
+                    </div>
                 </div>
                 <div class="-mr-2 flex md:hidden">
                     <button type="button" id="mobile-menu-button" class="inline-flex items-center justify-center p-3 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 focus:outline-none w-12 h-12">
@@ -88,12 +89,12 @@
             </div>
         </div>
         
-                 <!-- Mobile menu -->
-         <div class="hidden md:hidden bg-white shadow-lg" id="mobile-menu">
-             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3" id="mobile-menu-items">
-                 <!-- Mobile menu items will be generated dynamically -->
-             </div>
-         </div>
+        <!-- Mobile menu -->
+        <div class="hidden md:hidden bg-white shadow-lg" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3" id="mobile-menu-items">
+                <!-- Mobile menu items will be generated dynamically -->
+            </div>
+        </div>
     </nav>
     
     <!-- Main Content -->
@@ -115,14 +116,13 @@
         </div>
     </main>
 
-    <!-- JavaScript for mobile menu functionality -->
+    <!-- JavaScript for functionality -->
     <script>
         // Mobile menu toggle functionality
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
         let isMenuOpen = false;
 
-        // Add multiple event listeners for better compatibility
         mobileMenuButton.addEventListener('click', toggleMobileMenu);
         mobileMenuButton.addEventListener('touchstart', toggleMobileMenu);
         
@@ -141,7 +141,6 @@
             }
         }
 
-        // Close mobile menu when clicking outside
         document.addEventListener('click', function(event) {
             if (!mobileMenuButton.contains(event.target) && !mobileMenu.contains(event.target)) {
                 if (isMenuOpen) {
@@ -152,7 +151,6 @@
             }
         });
 
-        // Close mobile menu when window is resized to desktop
         window.addEventListener('resize', function() {
             if (window.innerWidth >= 768 && isMenuOpen) {
                 mobileMenu.classList.add('hidden');
@@ -161,37 +159,26 @@
             }
         });
 
-        // Add smooth transitions to mobile menu
         mobileMenu.style.transition = 'all 0.3s ease-in-out';
 
-        // Navigation bar show/hide functionality
+        // Navigation bar show/hide on scroll
         const navBar = document.querySelector('.nav-blur');
-        let navTimeout;
-
-        // Show nav bar on mouse move to top
-        document.addEventListener('mousemove', function(e) {
-            if (e.clientY <= 50) {
-                navBar.classList.add('show');
-                clearTimeout(navTimeout);
-            } else {
-                navTimeout = setTimeout(() => {
-                    navBar.classList.remove('show');
-                }, 2000);
-            }
-        });
-
-        // Show nav bar on scroll
         let lastScrollTop = 0;
+
         window.addEventListener('scroll', function() {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > lastScrollTop) {
-                // Scrolling down
-                navBar.classList.remove('show');
-            } else {
-                // Scrolling up
+            
+            if (scrollTop <= 50) {
                 navBar.classList.add('show');
+                navBar.classList.remove('hidden-nav');
+            } else if (scrollTop > lastScrollTop) {
+                navBar.classList.remove('show');
+                navBar.classList.add('hidden-nav');
+            } else {
+                navBar.classList.add('show');
+                navBar.classList.remove('hidden-nav');
             }
-            lastScrollTop = scrollTop;
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         });
 
         // Website configuration and loading functionality
@@ -199,7 +186,6 @@
         const loading = document.getElementById('loading');
         let websiteConfig = {};
         
-        // Show loading when iframe is loading
         iframe.addEventListener('load', function() {
             loading.style.display = 'none';
         });
@@ -208,14 +194,12 @@
             loading.style.display = 'block';
         });
         
-        // Handle iframe errors
         iframe.addEventListener('error', function() {
             console.error('Iframe failed to load');
             loading.style.display = 'none';
             showErrorMessage();
         });
         
-        // Function to show error message
         function showErrorMessage() {
             const errorMessage = document.getElementById('error-message');
             errorMessage.classList.remove('hidden');
@@ -224,7 +208,6 @@
             }, 5000);
         }
         
-        // Function to check if website allows iframe
         function checkIframeSupport(url) {
             const blockedSites = [
                 'facebook.com',
@@ -233,31 +216,25 @@
                 'linkedin.com',
                 'youtube.com'
             ];
-            
             return !blockedSites.some(site => url.includes(site));
         }
 
-        // Function to generate menu items
         function generateMenuItems() {
             const desktopMenu = document.getElementById('desktop-menu');
             const mobileMenuItems = document.getElementById('mobile-menu-items');
             
-            // Clear existing menu items
             desktopMenu.innerHTML = '';
             mobileMenuItems.innerHTML = '';
             
-            // Get all domains from config
             const domains = Object.keys(websiteConfig);
             
             domains.forEach((domain, index) => {
-                // Create desktop menu item
                 const desktopLink = document.createElement('a');
                 desktopLink.href = '#';
                 desktopLink.className = index === 0 ? 'text-blue-600 px-3 py-2 rounded-md text-sm font-medium' : 'text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium';
                 desktopLink.textContent = domain;
                 desktopMenu.appendChild(desktopLink);
                 
-                // Create mobile menu item
                 const mobileLink = document.createElement('a');
                 mobileLink.href = '#';
                 mobileLink.className = index === 0 ? 'text-blue-600 block px-3 py-2 rounded-md text-base font-medium' : 'text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium';
@@ -266,7 +243,6 @@
             });
         }
 
-        // Function to load configuration from JSON
         async function loadConfig() {
             try {
                 const response = await fetch('https://raw.githubusercontent.com/vn-dafa/vn-dafa.github.io/refs/heads/main/config.json');
@@ -276,17 +252,14 @@
                 websiteConfig = await response.json();
                 console.log('Config loaded:', websiteConfig);
                 
-                // Generate menu items from config
                 generateMenuItems();
                 
-                // Load default website (first domain in config)
                 const firstDomain = Object.keys(websiteConfig)[0];
                 if (firstDomain && websiteConfig[firstDomain]) {
                     iframe.src = websiteConfig[firstDomain];
                 }
             } catch (error) {
                 console.error('Error loading config:', error);
-                // Fallback to default URLs if config fails to load
                 websiteConfig = {
                     'vn.minghui.org': 'https://vn.minghui.org',
                     'vi.falundafa.org': 'https://vi.falundafa.org'
@@ -299,31 +272,25 @@
             }
         }
 
-        // Function to load website
         function loadWebsite(domain) {
             if (websiteConfig[domain]) {
                 const url = websiteConfig[domain];
                 
-                // Check if website supports iframe
                 if (!checkIframeSupport(url)) {
                     console.warn('Website may not support iframe:', domain);
-                    // Still try to load, but show warning
                 }
                 
                 loading.style.display = 'block';
                 
-                // Add error handling for iframe
                 iframe.onerror = function() {
                     console.error('Failed to load:', domain);
                     loading.style.display = 'none';
                 };
                 
-                // Handle iframe load errors
                 iframe.onload = function() {
                     loading.style.display = 'none';
                 };
                 
-                // Try to load the website
                 try {
                     iframe.src = url;
                 } catch (error) {
@@ -331,14 +298,12 @@
                     loading.style.display = 'none';
                 }
                 
-                // Reset all links to gray color first
                 const allLinks = document.querySelectorAll('#desktop-menu a, #mobile-menu-items a');
                 allLinks.forEach(link => {
                     link.classList.remove('text-blue-600');
                     link.classList.add('text-gray-700', 'hover:text-blue-600');
                 });
                 
-                // Update desktop menu colors
                 const desktopLinks = document.querySelectorAll('#desktop-menu a');
                 desktopLinks.forEach(link => {
                     if (link.textContent === domain) {
@@ -347,7 +312,6 @@
                     }
                 });
                 
-                // Update mobile menu colors
                 const mobileLinks = document.querySelectorAll('#mobile-menu-items a');
                 mobileLinks.forEach(link => {
                     if (link.textContent === domain) {
@@ -358,9 +322,7 @@
             }
         }
 
-        // Function to add event listeners to menu items
         function addMenuEventListeners() {
-            // Desktop menu items
             const desktopLinks = document.querySelectorAll('#desktop-menu a');
             desktopLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -368,7 +330,6 @@
                     const domain = this.textContent;
                     loadWebsite(domain);
                     
-                    // Close mobile menu if open
                     if (isMenuOpen) {
                         mobileMenu.classList.add('hidden');
                         mobileMenuButton.innerHTML = '<i class="fas fa-bars text-xl"></i>';
@@ -377,7 +338,6 @@
                 });
             });
 
-            // Mobile menu items
             const mobileLinks = document.querySelectorAll('#mobile-menu-items a');
             mobileLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -385,7 +345,6 @@
                     const domain = this.textContent;
                     loadWebsite(domain);
                     
-                    // Close mobile menu
                     mobileMenu.classList.add('hidden');
                     mobileMenuButton.innerHTML = '<i class="fas fa-bars text-xl"></i>';
                     isMenuOpen = false;
@@ -393,12 +352,8 @@
             });
         }
 
-        // Add click event listeners to menu items
         document.addEventListener('DOMContentLoaded', async function() {
-            // Load configuration first
             await loadConfig();
-            
-            // Add event listeners to generated menu items
             addMenuEventListeners();
         });
     </script>
